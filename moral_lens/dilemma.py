@@ -24,7 +24,7 @@ class IsValidResponse:
             self.parse_fn = parse_reasoning_and_decision
         elif prompt_template == "reasoning_after":
             self.parse_fn = parse_decision_and_reasoning
-        elif prompt_template == "no_reasoning":
+        else: # Default, e.g. for "no_reasoning"
             self.parse_fn = parse_reasoning_and_decision
 
     def __call__(self, response_obj: LLMResponse) -> bool:
@@ -104,7 +104,7 @@ class DilemmaRunner:
             self.parse_fn = parse_reasoning_and_decision
         elif prompts_template == "reasoning_after":
             self.parse_fn = parse_decision_and_reasoning
-        elif prompts_template == "no_reasoning":
+        else: # Default, e.g. for "no_reasoning"
             self.parse_fn = parse_reasoning_and_decision
 
         self.system_prompt_template = prompts_template_obj['system_prompt_template']
