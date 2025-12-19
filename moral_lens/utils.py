@@ -209,6 +209,18 @@ def parse_acted_response(text: Optional[str]) -> Optional[Tuple[str, str]]:
     # For acted prompts, there's no reasoning - just return the raw response as decision
     return "", text.strip()
 
+def parse_death_response(text: Optional[str]) -> Optional[Tuple[str, str]]:
+    """
+    Parse a 'no_reasoning_death' response where the model returns 'A' or 'B' directly.
+    Returns (reasoning, decision) where reasoning is empty and decision is the raw text.
+    Note: The caller must invert A↔B since choosing A means A dies (so B is saved).
+    """
+    if text is None:
+        return None, None
+    
+    # For death prompts, there's no reasoning - just return the raw response as decision
+    return "", text.strip()
+
 def match_A_or_B(text: str) -> Optional[str]:
     """
     Given a text, check if it contains only one of either 'A' or 'B' (or 'Left'/'Right') 

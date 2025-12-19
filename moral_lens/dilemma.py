@@ -9,7 +9,7 @@ from typing import List, Optional
 from moral_lens.models import ModelFactory, load_model_config
 from moral_lens.data_models import ChatMessage, LLMResponse, MessageRole, Prompt
 from moral_lens.data_models import Provider
-from moral_lens.utils import load_yaml_file, fuzzy_match_decisions, parse_reasoning_and_decision, parse_decision_and_reasoning, parse_acted_response, match_A_or_B
+from moral_lens.utils import load_yaml_file, fuzzy_match_decisions, parse_reasoning_and_decision, parse_decision_and_reasoning, parse_acted_response, parse_death_response, match_A_or_B
 from moral_lens.config import ModelConfig, PathConfig
 
 from dataclasses import dataclass
@@ -19,13 +19,17 @@ from typing import Optional
 class IsValidResponse:
     def __init__(self, prompt_template: str):
         self.prompt_template = prompt_template
+        # For "death" framing, choosing A means A dies (so B is saved) - need to invert
+        self.invert_decision = prompt_template.endswith("_death")
 
-        if prompt_template == "reasoning_before":
+        if prompt_template in ("reasoning_before", "reasoning_before_death"):
             self.parse_fn = parse_reasoning_and_decision
-        elif prompt_template == "reasoning_after":
+        elif prompt_template in ("reasoning_after", "reasoning_after_death"):
             self.parse_fn = parse_decision_and_reasoning
         elif prompt_template == "acted":
             self.parse_fn = parse_acted_response
+        elif prompt_template == "no_reasoning_death":
+            self.parse_fn = parse_death_response
         else: # Default, e.g. for "no_reasoning"
             self.parse_fn = parse_reasoning_and_decision
 
@@ -53,10 +57,13 @@ class IsValidResponse:
             reasoning, decision = self.parse_fn(content)
             # decision = fuzzy_match_decisions(decision, two_choices)
             decisionLetter = match_A_or_B(decision)
+            # For "dies" framing: choosing A means A dies, so the saved choice is B (invert)
+            if self.invert_decision:
+                decisionLetter = "B" if decisionLetter == "A" else "A" if decisionLetter == "B" else ""
             decision = choiceA if decisionLetter == "A" else choiceB if decisionLetter == "B" else ""
             if len(decision) == 0:
                 return False
-            if len(reasoning) == 0 and self.prompt_template not in ("no_reasoning", "acted"):
+            if len(reasoning) == 0 and self.prompt_template not in ("no_reasoning", "acted", "no_reasoning_death"):
                 return False
 
         return True
@@ -102,12 +109,17 @@ class DilemmaRunner:
         prompts_template_obj = template_yaml_obj[prompts_template]
         self.prompts_template = prompts_template
 
-        if prompts_template == "reasoning_before":
+        # For "death" framing, choosing A means A dies (so B is saved) - need to invert
+        self.invert_decision = prompts_template.endswith("_death")
+
+        if prompts_template in ("reasoning_before", "reasoning_before_death"):
             self.parse_fn = parse_reasoning_and_decision
-        elif prompts_template == "reasoning_after":
+        elif prompts_template in ("reasoning_after", "reasoning_after_death"):
             self.parse_fn = parse_decision_and_reasoning
         elif prompts_template == "acted":
             self.parse_fn = parse_acted_response
+        elif prompts_template == "no_reasoning_death":
+            self.parse_fn = parse_death_response
         else: # Default, e.g. for "no_reasoning"
             self.parse_fn = parse_reasoning_and_decision
 
@@ -308,6 +320,9 @@ class DilemmaRunner:
                     reasoning = thinking
                 # decision = fuzzy_match_decisions(decision, choices)
                 decisionLetter = match_A_or_B(decision)
+                # For "dies" framing: choosing A means A dies, so the saved choice is B (invert)
+                if self.invert_decision:
+                    decisionLetter = "B" if decisionLetter == "A" else "A" if decisionLetter == "B" else ""
                 decision = choiceA if decisionLetter == "A" else choiceB if decisionLetter == "B" else ""
                 reasoning = "" if decision == "" else reasoning
 
