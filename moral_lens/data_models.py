@@ -40,6 +40,7 @@ class Prompt:
         ])
     """
     messages: list[ChatMessage]
+    two_choices: list[str] = None  # Optional: the two choices for dilemma prompts
 
     def __getitem__(self, index):
         """

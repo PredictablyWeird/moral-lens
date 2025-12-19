@@ -246,7 +246,7 @@ class OpenAIModel(BaseModel):
             completion=completion,
             content=getattr(completion.choices[0].message, "content", ""),
             thinking_content=getattr(completion.choices[0].message, "reasoning", ""),
-            two_choices=list(prompt.messages[-1].content.split('"')[1::2]), # TODO: a bit hacky
+            two_choices=prompt.two_choices if prompt.two_choices else list(prompt.messages[-1].content.split('"')[1::2]),
         )
 
         return response_obj
@@ -300,7 +300,7 @@ class AnthropicModel(BaseModel):
             completion=completion,
             content=getattr(completion.content[-1], "text", ""),
             thinking_content=getattr(completion.content[0], "thinking", ""),
-            two_choices=list(prompt.messages[-1].content.split('"')[1::2]), # TODO: a bit hacky
+            two_choices=prompt.two_choices if prompt.two_choices else list(prompt.messages[-1].content.split('"')[1::2]),
         )
 
         return response_obj
@@ -354,7 +354,7 @@ class GeminiModel(BaseModel):
             completion=completion,
             content=getattr(completion, "text", ""),
             thinking_content=getattr(completion, "reasoning", ""),
-            two_choices=list(prompt.messages[-1].content.split('"')[1::2]), # TODO: a bit hacky
+            two_choices=prompt.two_choices if prompt.two_choices else list(prompt.messages[-1].content.split('"')[1::2]),
         )
 
         return response_obj
@@ -416,7 +416,7 @@ class OpenRouterModel(BaseModel):
             completion=completion,
             content=getattr(completion.choices[0].message, "content", ""),
             thinking_content=getattr(completion.choices[0].message, "reasoning", ""),
-            two_choices=list(prompt.messages[-1].content.split('"')[1::2]), # TODO: a bit hacky
+            two_choices=prompt.two_choices if prompt.two_choices else list(prompt.messages[-1].content.split('"')[1::2]),
         )
 
         return response_obj
@@ -532,7 +532,7 @@ class HuggingFaceModel(BaseModel):
             completion=outputs,
             content=completion[0].strip() if completion else "",
             thinking_content="",  # Our HuggingFace models do not provide reasoning/thinking
-            two_choices=list(prompt.messages[-1].content.split('"')[1::2]), # TODO: a bit hacky
+            two_choices=prompt.two_choices if prompt.two_choices else list(prompt.messages[-1].content.split('"')[1::2]),
         )
 
         return response_obj

@@ -198,9 +198,25 @@ def parse_decision_and_reasoning(text: Optional[str]) -> Optional[Tuple[str, str
     decision = parse_keyword_text_(text, "decision", "reasoning")
     return reasoning, decision
 
+def parse_acted_response(text: Optional[str]) -> Optional[Tuple[str, str]]:
+    """
+    Parse an 'acted' response where the model just returns 'Left' or 'Right' directly.
+    Returns (reasoning, decision) where reasoning is empty and decision is the raw text.
+    """
+    if text is None:
+        return None, None
+    
+    # For acted prompts, there's no reasoning - just return the raw response as decision
+    return "", text.strip()
+
 def match_A_or_B(text: str) -> Optional[str]:
     """
-    Given a text, check if it contains only one of either 'A' or 'B' and return the corresponding value.
+    Given a text, check if it contains only one of either 'A' or 'B' (or 'Left'/'Right') 
+    and return the corresponding value.
+    
+    For "acted" prompts that use Left/Right (framed as killing):
+    - "Left" kills choice1, saves choice2 → equivalent to "B"
+    - "Right" kills choice2, saves choice1 → equivalent to "A"
     """
     text = text.replace("*", "")
     text = text.replace("_", " ")
@@ -211,6 +227,14 @@ def match_A_or_B(text: str) -> Optional[str]:
     text = text.replace(" scratchpad:", " scratchpad")
     text = text.replace(" Scratchpad:", " Scratchpad")
     text = re.sub(r"[()]", "", text) # remove any parentheses or brackets
+
+    # Check for 'Left' or 'Right' in the text (for "acted" prompts)
+    ifLeft = re.search(r"\bLeft\b", text, re.IGNORECASE)
+    ifRight = re.search(r"\bRight\b", text, re.IGNORECASE)
+    if ifLeft and not ifRight:
+        return "B"  # Left kills choice1, saves choice2 → B
+    elif ifRight and not ifLeft:
+        return "A"  # Right kills choice2, saves choice1 → A
 
     # Check for 'A' or 'B' in the text
     ifA = re.search(r"\bA\b(?!['])", text)#, re.IGNORECASE)

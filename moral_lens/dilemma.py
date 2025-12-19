@@ -9,7 +9,7 @@ from typing import List, Optional
 from moral_lens.models import ModelFactory, load_model_config
 from moral_lens.data_models import ChatMessage, LLMResponse, MessageRole, Prompt
 from moral_lens.data_models import Provider
-from moral_lens.utils import load_yaml_file, fuzzy_match_decisions, parse_reasoning_and_decision, parse_decision_and_reasoning, match_A_or_B
+from moral_lens.utils import load_yaml_file, fuzzy_match_decisions, parse_reasoning_and_decision, parse_decision_and_reasoning, parse_acted_response, match_A_or_B
 from moral_lens.config import ModelConfig, PathConfig
 
 from dataclasses import dataclass
@@ -24,6 +24,8 @@ class IsValidResponse:
             self.parse_fn = parse_reasoning_and_decision
         elif prompt_template == "reasoning_after":
             self.parse_fn = parse_decision_and_reasoning
+        elif prompt_template == "acted":
+            self.parse_fn = parse_acted_response
         else: # Default, e.g. for "no_reasoning"
             self.parse_fn = parse_reasoning_and_decision
 
@@ -54,7 +56,7 @@ class IsValidResponse:
             decision = choiceA if decisionLetter == "A" else choiceB if decisionLetter == "B" else ""
             if len(decision) == 0:
                 return False
-            if len(reasoning) == 0 and self.prompt_template != "no_reasoning":
+            if len(reasoning) == 0 and self.prompt_template not in ("no_reasoning", "acted"):
                 return False
 
         return True
@@ -104,6 +106,8 @@ class DilemmaRunner:
             self.parse_fn = parse_reasoning_and_decision
         elif prompts_template == "reasoning_after":
             self.parse_fn = parse_decision_and_reasoning
+        elif prompts_template == "acted":
+            self.parse_fn = parse_acted_response
         else: # Default, e.g. for "no_reasoning"
             self.parse_fn = parse_reasoning_and_decision
 
@@ -220,7 +224,7 @@ class DilemmaRunner:
                 ChatMessage(role=MessageRole.user, content=dilemma_prompt)
             ]
 
-            prompts.append(Prompt(messages=messages))
+            prompts.append(Prompt(messages=messages, two_choices=[choice1, choice2]))
             processed_indices.append(idx)
 
         if not prompts:
