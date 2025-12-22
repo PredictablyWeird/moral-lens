@@ -15,6 +15,7 @@ blobfile
 sentencepiece
 protobuf
 
+pyarrow
 adjustText
 gradio
 aiolimiter
