@@ -22,11 +22,11 @@ class IsValidResponse:
         # For "death" framing, choosing A means A dies (so B is saved) - need to invert
         self.invert_decision = prompt_template.endswith("_death")
 
-        if prompt_template in ("reasoning_before", "reasoning_before_death"):
+        if prompt_template in ("reasoning_before", "reasoning_before_death", "reasoning_before_acted"):
             self.parse_fn = parse_reasoning_and_decision
         elif prompt_template in ("reasoning_after", "reasoning_after_death"):
             self.parse_fn = parse_decision_and_reasoning
-        elif prompt_template == "acted":
+        elif prompt_template == "no_reasoning_acted":
             self.parse_fn = parse_acted_response
         elif prompt_template == "no_reasoning_death":
             self.parse_fn = parse_death_response
@@ -63,7 +63,7 @@ class IsValidResponse:
             decision = choiceA if decisionLetter == "A" else choiceB if decisionLetter == "B" else ""
             if len(decision) == 0:
                 return False
-            if len(reasoning) == 0 and self.prompt_template not in ("no_reasoning", "acted", "no_reasoning_death"):
+            if len(reasoning) == 0 and self.prompt_template not in ("no_reasoning", "no_reasoning_acted", "no_reasoning_death"):
                 return False
 
         return True
@@ -112,11 +112,11 @@ class DilemmaRunner:
         # For "death" framing, choosing A means A dies (so B is saved) - need to invert
         self.invert_decision = prompts_template.endswith("_death")
 
-        if prompts_template in ("reasoning_before", "reasoning_before_death"):
+        if prompts_template in ("reasoning_before", "reasoning_before_death", "reasoning_before_acted"):
             self.parse_fn = parse_reasoning_and_decision
         elif prompts_template in ("reasoning_after", "reasoning_after_death"):
             self.parse_fn = parse_decision_and_reasoning
-        elif prompts_template == "acted":
+        elif prompts_template == "no_reasoning_acted":
             self.parse_fn = parse_acted_response
         elif prompts_template == "no_reasoning_death":
             self.parse_fn = parse_death_response
