@@ -154,7 +154,9 @@ class BaseModel(ABC):
                     #     return i, False, None
                     response.attempts = attempts + 1
                     return i, True, response
-                except Exception:
+                except Exception as e:
+                    print(f"  EXCEPTION: {type(e).__name__}: {e}")
+
                     return i, False, None
 
         # Continue processing until all prompts are handled or max retries are exhausted
