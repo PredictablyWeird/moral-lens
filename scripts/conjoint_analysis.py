@@ -38,12 +38,19 @@ class ConjointAnalyzer:
     category2 columns that identify which attribute levels are being compared.
     """
     
-    def __init__(self, results_dir: str = "data/results"):
+    def __init__(self, results_dir: str = "data/results", model_id: str = None):
         self.path_config = PathConfig(results_dir=results_dir)
+        self.model_id = model_id
     
     def find_result_files(self, decision_run_name: str) -> List[Path]:
         """Find all result files matching the decision_run_name pattern."""
         responses_dir = self.path_config.responses_output_dir
+        
+        if not responses_dir.exists():
+            raise FileNotFoundError(
+                f"Responses directory not found: {responses_dir}\n"
+                f"Make sure --results_dir points to a directory containing a 'responses' subdirectory."
+            )
         
         # Pattern: {model_id}_{decision_run_name}_{i}.csv or {model_id}_{decision_run_name}.csv
         # Use regex to match exactly: _{decision_run_name}_\d+ or _{decision_run_name}.csv
@@ -51,10 +58,21 @@ class ConjointAnalyzer:
         all_csv_files = list(responses_dir.glob("*.csv"))
         files = []
         
-        # Pattern 1: _{decision_run_name}_{number}.csv
-        pattern_with_number = re.compile(rf"_{re.escape(decision_run_name)}_\d+\.csv$")
-        # Pattern 2: _{decision_run_name}.csv (no number suffix)
-        pattern_no_number = re.compile(rf"_{re.escape(decision_run_name)}\.csv$")
+        # Build pattern based on model_id filter
+        if self.model_id:
+            # Pattern with model_id prefix: {model_id}_{decision_run_name}_{number}.csv
+            pattern_with_number = re.compile(
+                rf"^{re.escape(self.model_id)}.*_{re.escape(decision_run_name)}_\d+\.csv$"
+            )
+            # Pattern without number: {model_id}_{decision_run_name}.csv
+            pattern_no_number = re.compile(
+                rf"^{re.escape(self.model_id)}.*_{re.escape(decision_run_name)}\.csv$"
+            )
+        else:
+            # Pattern 1: _{decision_run_name}_{number}.csv
+            pattern_with_number = re.compile(rf"_{re.escape(decision_run_name)}_\d+\.csv$")
+            # Pattern 2: _{decision_run_name}.csv (no number suffix)
+            pattern_no_number = re.compile(rf"_{re.escape(decision_run_name)}\.csv$")
         
         for file in all_csv_files:
             file_str = file.name
@@ -65,10 +83,11 @@ class ConjointAnalyzer:
         files = list(set(files))
         
         if not files:
-            raise FileNotFoundError(
-                f"No result files found matching pattern '{decision_run_name}' "
-                f"in {responses_dir}"
-            )
+            msg = f"No result files found matching pattern '{decision_run_name}'"
+            if self.model_id:
+                msg += f" for model '{self.model_id}'"
+            msg += f" in {responses_dir}"
+            raise FileNotFoundError(msg)
         
         return sorted(files)
     
@@ -316,10 +335,16 @@ def main():
         default='data/results',
         help='Directory containing results (default: data/results)'
     )
+    parser.add_argument(
+        '--model_id',
+        type=str,
+        default=None,
+        help='Filter results by model ID (e.g., "gpt-4o-mini")'
+    )
     
     args = parser.parse_args()
     
-    analyzer = ConjointAnalyzer(results_dir=args.results_dir)
+    analyzer = ConjointAnalyzer(results_dir=args.results_dir, model_id=args.model_id)
     analyzer.analyze(args.decision_run_name)
     
     print(f"\n{'='*70}")
